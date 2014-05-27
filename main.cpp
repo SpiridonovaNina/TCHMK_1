@@ -178,21 +178,40 @@ bool process(bigNumber A, bigNumber B, bigNumber modulus, char operation, bigNum
 		break;
 
 	case '/':
-		if (B == (long long int)0)
+		/*if (B == (long long int)0)
 		{
 			cout << "Division by zero" << endl;
 			return false;
+		}*/
+		try
+		{
+			res = A / B;  //R: при деленнии на 0 будет брошено исключение
+			//   нужно его обрабатывать вместо предыдущей проверки
+			// исправлено
 		}
-		res = A / B;
+		catch (int err)
+		{
+			if (err == DIV_ON_ZERO)
+			{
+				cout << "Division by zero" << endl;
+				return false;
+			}
+		}
 		break;
 
 	case '%':
-		if (B == (long long int)0)
+		try
 		{
-			cout << "Division by zero" << endl;
-			return false;
+			res = A % B;
 		}
-		res = A % B;
+		catch (int err)
+		{
+			if (err == DIV_ON_ZERO)
+			{
+				cout << "Division by zero" << endl;
+				return false;
+			}
+		}
 		break;
 	
 	default:

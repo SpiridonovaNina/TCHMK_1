@@ -9,7 +9,7 @@ class bigNumber
 public:
 	bigNumber();
 	bigNumber(const char* String);
-	bigNumber(const bigNumber &RightHandValue);
+	bigNumber(const bigNumber& RightHandValue);
 	bigNumber(long long int RightHandValue);
 	~bigNumber();
 
@@ -20,8 +20,11 @@ public:
 	bool SaveNumberInBinFile(const char* FileName);
 	
 
-	bigNumber& operator=(const bigNumber& RightHandValue);
+	bigNumber operator=(const bigNumber& RightHandValue);
 
+  //R:  для арифметических оперторв нужно использовать bigNumber& для возвращаемого значения
+  //    это позволи избежать ненужного копирования
+ // это исправить не удалось, т. к. при return вызываются деструкторы для локальных объектов и возвращается ссылка на пустоту
 	bigNumber operator+(const bigNumber& right) const;
 	bigNumber operator-() const;
 	bigNumber operator-(const bigNumber& right) const;
@@ -58,13 +61,12 @@ private:
 	long long int _Compare(const bigNumber& B);
 	void _ShiftLeft(int s);
 
-	friend const bigNumber _Sum_and_Sub(const bigNumber& left, const bigNumber& right);
-	friend const bigNumber _Multiplication(const bigNumber& A, const bigNumber& B);
-	friend const bigNumber _Division(const bigNumber& A, const bigNumber& B, bigNumber &remainder);
+  // R: Зачем эти функции объявлены как дружественные для класса ?
+	// исправлено
+	bigNumber _Sum_and_Sub(const bigNumber& left, const bigNumber& right) const;
+	bigNumber _Multiplication(const bigNumber A, const bigNumber B) const;
+	bigNumber _Division(const bigNumber& A, const bigNumber& B, bigNumber &remainder) const;
 
 };
-const bigNumber _Sum_and_Sub(const bigNumber& left, const bigNumber& right);
-const bigNumber _Multiplication(const bigNumber& A, const bigNumber& B);
-const bigNumber _Division(const bigNumber& A, const bigNumber& B, bigNumber &remainder);
 
-const bigNumber Pow(const bigNumber& A, const bigNumber& B, bigNumber& modulus);
+bigNumber Pow(const bigNumber& A, const bigNumber& B, bigNumber& modulus);

@@ -2,20 +2,35 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fstream>
+using std::ifstream;
+using std::ofstream;
+
+//R: для обращения к членам класса нужно исползовать this
+//   это увеличивает читаемость кода
+//   сразу понятно что переменная пренадлежит классу
+// исправлено
 
 bigNumber::bigNumber()
 {
-	_size = 1;
-	_sign = 0;
-	_digits = new unsigned int[1];
-	_digits[0] = 0;
+	this->_size = 1;
+	this->_sign = 0;
+	this->_digits = new unsigned int[1];
+	this->_digits[0] = 0;
 }
 
-bigNumber::bigNumber(const char* string)
+bigNumber::bigNumber(const char* string) //R: логика функции сильно сложная ее нужно упростить
+										// логика функции:
+										// проверить входную строку
+										// представить каждые 9 символов в виде числа
+										// записать числа массив коэффициентов
+										// я не смогла придумать, как её упростить
 {// конструктор из строки
-	//
+	
 	if (!string)
 		return;
+
+	this->_size = 0;
 
 	int strSize = strlen(string);
 	int strSign = 0;
@@ -24,26 +39,26 @@ bigNumber::bigNumber(const char* string)
 		strSize--;
 		strSign = 1;
 	}
-	char* strCpy = new char[strlen(string) + 1]; 
-	strcpy(strCpy, string);
+	//char* strCpy = new char[strlen(string) + 1]; //R: зачем тут создается этот массив ?
+                                               //   можно обойтись без него
+												// исправлено
 
 	// проверка входной строки
-	char* pStr = strCpy + strSign;
+	const char* pStr = string + strSign;
 	while (*pStr)
 	{
 		if (*pStr < '0' || *pStr > '9')
 		{
-			_size = 0;
-			delete[] strCpy;
+			this->_size = 0;
 			_SetSize(1);
 			return;
 		}
 		pStr++;
 	}
 
-	bigNumber res;
-	// получаем количество разрядов 
-	res._SetSize((strSize + strSign + 8) / 9); 
+	
+	// количество разрядов - округление до большего целого от (длина строки) / 9
+	this->_SetSize((strSize + strSign + 8) / 9); 
 
 	// разбиваем строку на части по 9 символов
 	for (int i = 0; i < (strSize + strSign) / 9; i++)
@@ -51,24 +66,25 @@ bigNumber::bigNumber(const char* string)
 		pStr -= 9;
 		char splStr[10];
 		memcpy(splStr, pStr, 9);
-		splStr[9] = '\0';
+		splStr[9] = '\0'; // получили очередную строку из 9 символов
 		unsigned int digitI = atol(splStr);
-		res[i] = digitI;
+		this->_digits[i] = digitI;
 	}
 
-	// обработываем оставшиеся символы
-	*pStr = 0;
-	if (*(strCpy + strSign) != '\0')
+	// обрабатываем оставшиеся символы (если длина строки не кратна 9)
+	char ost[10];
+	memset(ost, 0, 10);
+	memcpy(ost, string + strSign, pStr - string - strSign); // получили строку - необработанная часть
+	if (strlen(ost) > 0)
 	{
-		unsigned int lastDigit = atol(strCpy + strSign);
-		res[-1] = lastDigit;
+		unsigned int lastDigit = atol(ost);
+		this->operator[](-1) = lastDigit;
 	}
 	
-	delete[] strCpy;
-	res._sign = strSign;
-	res._DelNeedlessZeros();
-	this->_size = 0;
-	*this = res;
+	this->_sign = strSign;
+	this->_DelNeedlessZeros();
+	//*this = res; //R:  странная конструкция, почему бы сразуже не использовать this вместо временной переменной res ?
+	// исправлено
 }
 
 bigNumber::bigNumber(const bigNumber &rhv)
@@ -78,19 +94,19 @@ bigNumber::bigNumber(const bigNumber &rhv)
 
 bigNumber::bigNumber(long long int value)
 {
-	_digits = new unsigned int[3]();
-	_size = 0;
-	_sign = 0;
+	this->_digits = new unsigned int[3]();
+	this->_size = 0;
+	this->_sign = 0;
 	long long int carry = value;
 	if (carry < 0)
 	{
-		_sign = 1;
+		this->_sign = 1;
 		carry = -carry;
 	}
 	do
 	{
-		_size++;
-		_digits[_size - 1] = carry % BASE;
+		this->_size++;
+		this->_digits[this->_size - 1] = carry % BASE;
 		carry = carry / BASE;
 	} while (carry);
 	_DelNeedlessZeros();
@@ -98,20 +114,20 @@ bigNumber::bigNumber(long long int value)
 
 bigNumber::~bigNumber()
 {
-	if (_size) delete[] _digits;
+	if (this->_size) delete[] _digits;
 }
 
 
 char* bigNumber::GetString()
 {// возвращает строку, в которой записано число в 10-ричной системе счисления
-	char* strBuffer = new char[_size * 9 + 1 + _sign]();
-	char* pString = strBuffer + _size * 9 + _sign; // указатель на текущую позицию для записи числа
+	char* strBuffer = new char[this->_size * 9 + 1 + this->_sign]();
+	char* pString = strBuffer + this->_size * 9 + this->_sign; // указатель на текущую позицию для записи числа
 	
-	for (int i = 0; i < _size; i++)
+	for (int i = 0; i < this->_size; i++)
 	{
 		// получаем строковое представление очередного разряда
 		char splStr[10];
-		sprintf(splStr, "%09u", _digits[i]);
+		sprintf(splStr, "%09u", this->_digits[i]);
 
 		pString -= 9;
 		memcpy(pString, splStr, 9);
@@ -136,88 +152,94 @@ char* bigNumber::GetString()
 
 bool bigNumber::GetNumberFromFile(const char* filename)
 {
-	FILE* Text_file = fopen(filename, "r");
-	if (!Text_file)
+	//FILE* Text_file = fopen(filename, "r");//R:  для единого стиля библиотеки нужно использовать потоки (fstream) для работы с файлам
+                                         //    вместо stdio из чистого С
+										// исправлено
+
+	ifstream Text_file(filename);
+	if (Text_file.fail())
 		return false;
 
-	fseek(Text_file, 0, SEEK_END); //fseek() устанавливает указатель текущей позиции файла. SEEK_END     -  конец файла
-	int SizeOfFile = ftell(Text_file);// ftell() возвращает текущее значение указателя позиции файла для заданного потока
-	fseek(Text_file, 0, SEEK_SET);// SEEK_SET     -  начало файла
+	Text_file.seekg(0, std::ios::end);
+	int SizeOfFile = Text_file.tellg();
+	Text_file.seekg(0, std::ios::beg);
 
 	char* string = new char[SizeOfFile + 1]();
-	fscanf(Text_file, "%s", string);
-	fclose(Text_file);
+	Text_file >> string;
+	Text_file.close();
 
-	bigNumber res(string);
-	*this = res;
+	*this = bigNumber(string);
 	delete[] string;
 	return true;
 }
 
 bool bigNumber::SaveNumberToFile(const char* filename)
 {
-	FILE* Result_file = fopen(filename, "w");
-	if (!Result_file)
+	ofstream Result_file(filename);
+	if (Result_file.fail())
 		return false;
 
 	char* string = this->GetString();
-	int len = strlen(string);
-	int res = fwrite(string, sizeof(char), len, Result_file);
-	fclose(Result_file);
+	Result_file << string;
 	delete[] string;
-	if (res < len)
-		return false;
+	Result_file.close();
+	
 	return true;
 }
 
 bool bigNumber::SaveNumberInBinFile(const char* filename)
 {// в бинарный файл первым делом записывается знак.
-	FILE* Result_file = fopen(filename, "w+b");
-	if (!Result_file)
+	ofstream Result_file(filename, std::ios::binary);
+	if (Result_file.fail())
 		return false;
 
-	fwrite(&_sign, sizeof(_sign), 1, Result_file);
-	int res = fwrite(_digits, sizeof(unsigned int), _size, Result_file);
-	fclose(Result_file);
-	if (res < _size)
-		return false;
+	Result_file.write((char*) &this->_sign, sizeof(this->_sign)); // записываем знак
+	Result_file.write((char*)&this->_digits, this->_size * sizeof(unsigned int)); // записываем разряды
+
+	Result_file.close();
 	return true;
 }
 
 bool bigNumber::GetNumberFromBinFile(const char* filename)
 {// первым делом из бинарного файла считывается знак
-	FILE* Bin_file = fopen(filename, "r+b");
-	if (!Bin_file)
+	ifstream Bin_file(filename, std::ios::binary);
+	
+	if (Bin_file.fail())
 		return false;
 
-	fseek(Bin_file, 0, SEEK_END);
-	int fileSize = ftell(Bin_file);
-	fseek(Bin_file, 0, SEEK_SET);
+	Bin_file.seekg(0, std::ios::end);
+	int SizeOfFile = Bin_file.tellg();
+	Bin_file.seekg(0, std::ios::beg);
 
-	if (fileSize < sizeof(_sign))
+	if (SizeOfFile < sizeof(this->_sign))
 		return false;
-	int len = fread(&_sign, sizeof(_sign), 1, Bin_file);
-	fileSize -= sizeof(_sign);
-	if (_size) delete[] _digits;
-	_size = fileSize / sizeof(unsigned int);
-	if (!_size)
+	
+	Bin_file.read((char*)&this->_sign, sizeof(this->_sign)); // первым делом считывается знак
+	SizeOfFile -= sizeof(this->_sign);
+
+	if (this->_size) delete[] this->_digits;
+
+	this->_size = SizeOfFile / sizeof(unsigned int);
+	if (!this->_size)
 	{
 		_SetSize(1);
 		return false;
 	}
-	_digits = new unsigned int[_size]();
-	len = fread(_digits, sizeof(unsigned int), _size, Bin_file);
-	fclose(Bin_file);
+
+	this->_digits = new unsigned int[this->_size]();
+	Bin_file.read((char*) this->_digits, this->_size * sizeof(unsigned int));
+	
+	Bin_file.close();
 
 	return true;
 }
 
-bigNumber& bigNumber::operator=(const bigNumber& rhv)
+bigNumber bigNumber::operator=(const bigNumber& rhv)
 {
 	if (this->_digits == rhv._digits)
 		return *this;
-	if (_size)
-		delete[] _digits;
+	if (this->_size)
+		delete[] this->_digits;
 	_Copy(rhv);
 	return *this;
 }
@@ -320,39 +342,39 @@ std::istream& operator>>(std::istream &is, bigNumber &A)
 
 void bigNumber::_SetSize(int size)
 {	// изменяет размер числа, при этом обнуляя его. 
-	if (_size)
-		delete[] _digits;
-	_size = size;
-	_sign = 0;
-	_digits = new unsigned int[_size]();
+	if (this->_size)
+		delete[] this->_digits;
+	this->_size = size;
+	this->_sign = 0;
+	this->_digits = new unsigned int[this->_size]();
 }
 
 unsigned int & bigNumber::operator[](int i)
 {
 	if (i < 0)
-		return _digits[_size + i];
+		return this->_digits[this->_size + i];
 	return this->_digits[i];
 }
 
 unsigned int bigNumber::operator[](int i) const
 {
 	if (i < 0)
-		return _digits[_size + i];
+		return this->_digits[this->_size + i];
 	return this->_digits[i];
 }
 
 void bigNumber::_Copy(const bigNumber &rhv)
 {
-	_size = rhv._size;
+	this->_size = rhv._size;
 	if (!_size)
 	{
-		_digits = new unsigned int[1];
-		_digits[0] = 0;
-		_sign = 0;
+		this->_digits = new unsigned int[1];
+		this->_digits[0] = 0;
+		this->_sign = 0;
 		return;
 	}
-	_digits = new unsigned int[_size];
-	_sign = rhv._sign;
+	this->_digits = new unsigned int[_size];
+	this->_sign = rhv._sign;
 	memcpy(_digits, rhv._digits, _size*sizeof(unsigned int));
 	return;
 }
@@ -360,9 +382,9 @@ void bigNumber::_Copy(const bigNumber &rhv)
 void bigNumber::_DelNeedlessZeros()
 {
 	while ((_size - 1) && _digits && _digits[_size - 1] == 0)
-		_size--;
-	if (_size == 1 && _digits[0] == 0)
-		_sign = 0;
+		this->_size--;
+	if (this->_size == 1 && _digits[0] == 0)
+		this->_sign = 0;
 }
 
 long long int bigNumber::_Compare(const bigNumber& B)
@@ -397,21 +419,21 @@ void bigNumber::_ShiftLeft(int s)
 {// сдвигает число на s разрядов вправо
 	// то есть, по сути, это умножение на BASE^s
 	// сдвиг на отрицательное s - деление на BASE^(-s)
-	unsigned int* newDig = new unsigned int[_size + s]();
-	for (int i = 0; i < _size; i++)
+	unsigned int* newDig = new unsigned int[this->_size + s]();
+	for (int i = 0; i < this->_size; i++)
 	{
 		if (i + s >= 0)
 		{
-			newDig[i + s] = _digits[i];
+			newDig[i + s] = this->_digits[i];
 		}
 	}
-	delete[] _digits;
-	_digits = newDig;
-	_size += s;
+	delete[] this->_digits;
+	this->_digits = newDig;
+	this->_size += s;
 	_DelNeedlessZeros();
 }
 
-const bigNumber _Sum_and_Sub(const bigNumber& left, const bigNumber& right)
+bigNumber bigNumber::_Sum_and_Sub(const bigNumber& left, const bigNumber& right) const
 {
 	bigNumber A = left, B = right; // в А будет большее по модулю число, в B - меньшее.
 	A._sign = 0;
@@ -488,7 +510,7 @@ const bigNumber _Sum_and_Sub(const bigNumber& left, const bigNumber& right)
 	}
 }
 
-const bigNumber _Multiplication(const bigNumber& A, const bigNumber& B)
+bigNumber bigNumber::_Multiplication(const bigNumber A, const bigNumber B) const
 {// простое умножение "столбиком"
 	bigNumber res;
 	res._SetSize(A._size + B._size);
@@ -510,7 +532,7 @@ const bigNumber _Multiplication(const bigNumber& A, const bigNumber& B)
 	return res;
 }
 
-const bigNumber _Division(const bigNumber& A, const bigNumber& B, bigNumber &remainder)
+bigNumber bigNumber::_Division(const bigNumber& A, const bigNumber& B, bigNumber &remainder) const
 {// возвращает целую часть от деления, в remainder - остаток
 	remainder = A;
 	remainder._sign = 0;
@@ -520,8 +542,9 @@ const bigNumber _Division(const bigNumber& A, const bigNumber& B, bigNumber &rem
 
 	if (divider == bigNumber((long long int) 0))
 	{
-		throw DIV_ON_ZERO;
-		return bigNumber(-1);
+		throw DIV_ON_ZERO; //R: после исключения управлени будет передано в обработчик исключения
+		//return bigNumber(-1); //R: этот код никогда не будет выполнен
+		// исправлено
 	}
 
 	if (remainder < divider)
@@ -567,7 +590,7 @@ const bigNumber _Division(const bigNumber& A, const bigNumber& B, bigNumber &rem
 	return res;
 }
 
-const bigNumber Pow(const bigNumber& A, const bigNumber& B, bigNumber& modulus)
+bigNumber Pow(const bigNumber& A, const bigNumber& B, bigNumber& modulus)
 {// возведение A в степень B по модулю modulus
 	if (modulus <= (long long int) 0)
 		return A ^ B;
