@@ -1,0 +1,2 @@
+mingw32-make windowsdyn
+pause

@@ -250,11 +250,11 @@ bigNumber bigNumber::operator+(const bigNumber& right) const
 	return _Sum_and_Sub(*this, right);
 }
 
-bigNumber bigNumber::operator-() const
+bigNumber& bigNumber::operator-() const
 {// унарный минус
-	bigNumber res(*this);
-	res._sign = !res._sign;
-	return res;
+	bigNumber* res = new bigNumber(*this);
+	res->_sign = !res->_sign;
+	return *res;
 }
 
 bigNumber bigNumber::operator-(const bigNumber& right) const

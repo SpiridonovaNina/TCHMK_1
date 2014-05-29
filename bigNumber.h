@@ -26,7 +26,7 @@ public:
   //    это позволи избежать ненужного копирования
  // это исправить не удалось, т. к. при return вызываются деструкторы для локальных объектов и возвращается ссылка на пустоту
 	bigNumber operator+(const bigNumber& right) const;
-	bigNumber operator-() const;
+	bigNumber& operator-() const;
 	bigNumber operator-(const bigNumber& right) const;
 	bigNumber operator*(const bigNumber& right) const;
 	bigNumber operator/(const bigNumber& right) const;

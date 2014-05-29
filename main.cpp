@@ -14,6 +14,8 @@ bool saveRes(char* fileRes, bool binary, bigNumber res);
 
 int main(int argc, char* argv[])
 {
+	bigNumber a = 1, b = 2;
+	bigNumber c = a + (-b);
 	if (!checkArguments(argc, argv))
 		return -1;
 
