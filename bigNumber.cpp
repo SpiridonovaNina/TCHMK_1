@@ -26,7 +26,7 @@ bigNumber::bigNumber(const char* string) //R: логика функции сил
 										// записать числа массив коэффициентов
 										// я не смогла придумать, как её упростить
 {// конструктор из строки
-	
+
 	if (!string)
 		return;
 
@@ -56,7 +56,7 @@ bigNumber::bigNumber(const char* string) //R: логика функции сил
 		pStr++;
 	}
 
-	
+
 	// количество разрядов - округление до большего целого от (длина строки) / 9
 	this->_SetSize((strSize + strSign + 8) / 9); 
 
@@ -80,7 +80,7 @@ bigNumber::bigNumber(const char* string) //R: логика функции сил
 		unsigned int lastDigit = atol(ost);
 		this->operator[](-1) = lastDigit;
 	}
-	
+
 	this->_sign = strSign;
 	this->_DelNeedlessZeros();
 	//*this = res; //R:  странная конструкция, почему бы сразуже не использовать this вместо временной переменной res ?
@@ -122,7 +122,7 @@ char* bigNumber::GetString()
 {// возвращает строку, в которой записано число в 10-ричной системе счисления
 	char* strBuffer = new char[this->_size * 9 + 1 + this->_sign]();
 	char* pString = strBuffer + this->_size * 9 + this->_sign; // указатель на текущую позицию для записи числа
-	
+
 	for (int i = 0; i < this->_size; i++)
 	{
 		// получаем строковое представление очередного разряда
@@ -136,7 +136,7 @@ char* bigNumber::GetString()
 	// удаление ведущих нулей
 	while (*pString == '0' && *(pString + 1))
 		pString++;
-	
+
 	if (this->_sign)
 	{
 		pString--;
@@ -148,6 +148,11 @@ char* bigNumber::GetString()
 	delete[] strBuffer;
 
 	return string;
+}
+
+char* bigNumber::__str__()
+{
+	return GetString();
 }
 
 bool bigNumber::GetNumberFromFile(const char* filename)
@@ -183,7 +188,7 @@ bool bigNumber::SaveNumberToFile(const char* filename)
 	Result_file << string;
 	delete[] string;
 	Result_file.close();
-	
+
 	return true;
 }
 
@@ -203,7 +208,7 @@ bool bigNumber::SaveNumberInBinFile(const char* filename)
 bool bigNumber::GetNumberFromBinFile(const char* filename)
 {// первым делом из бинарного файла считывается знак
 	ifstream Bin_file(filename, std::ios::binary);
-	
+
 	if (Bin_file.fail())
 		return false;
 
@@ -213,7 +218,7 @@ bool bigNumber::GetNumberFromBinFile(const char* filename)
 
 	if (SizeOfFile < sizeof(this->_sign))
 		return false;
-	
+
 	Bin_file.read((char*)&this->_sign, sizeof(this->_sign)); // первым делом считывается знак
 	SizeOfFile -= sizeof(this->_sign);
 
@@ -228,13 +233,13 @@ bool bigNumber::GetNumberFromBinFile(const char* filename)
 
 	this->_digits = new unsigned int[this->_size]();
 	Bin_file.read((char*) this->_digits, this->_size * sizeof(unsigned int));
-	
+
 	Bin_file.close();
 
 	return true;
 }
 
-bigNumber bigNumber::operator=(const bigNumber& rhv)
+bigNumber& bigNumber::operator=(const bigNumber& rhv)
 {
 	if (this->_digits == rhv._digits)
 		return *this;
@@ -245,7 +250,7 @@ bigNumber bigNumber::operator=(const bigNumber& rhv)
 }
 
 
-bigNumber bigNumber::operator+(const bigNumber& right) const
+bigNumber& bigNumber::operator+(const bigNumber& right) const
 {
 	return _Sum_and_Sub(*this, right);
 }
@@ -257,36 +262,36 @@ bigNumber& bigNumber::operator-() const
 	return *res;
 }
 
-bigNumber bigNumber::operator-(const bigNumber& right) const
+bigNumber& bigNumber::operator-(const bigNumber& right) const
 {
-	return bigNumber(*this + (-right));
+	return *this + (-right);
 }
 
-bigNumber bigNumber::operator*(const bigNumber& right) const
+bigNumber& bigNumber::operator*(const bigNumber& right) const
 {
 	return _Multiplication(*this, right);
 }
 
-bigNumber bigNumber::operator/(const bigNumber& right) const
+bigNumber& bigNumber::operator/(const bigNumber& right) const
 {
 	bigNumber rem;
 	return _Division(*this, right, rem);
 }
 
-bigNumber bigNumber::operator%(const bigNumber& right) const
+bigNumber& bigNumber::operator%(const bigNumber& right) const
 {
-	bigNumber rem;
-	_Division(*this, right, rem);
-	return rem;
+	bigNumber* rem = new bigNumber;
+	_Division(*this, right, *rem);
+	return *rem;
 }
 
-bigNumber bigNumber::operator^(const bigNumber& right) const
+bigNumber& bigNumber::operator^(const bigNumber& right) const
 {// возведение *this в степень right
-	bigNumber res = 1;
+	bigNumber* res = new bigNumber(1);
 	bigNumber base = *this;
 	for (bigNumber i = right; i > (long long int) 0; i = i - 1)
-		res = res * base;
-	return res;
+		*res = *res * base;
+	return *res;
 }
 
 
@@ -433,7 +438,7 @@ void bigNumber::_ShiftLeft(int s)
 	_DelNeedlessZeros();
 }
 
-bigNumber bigNumber::_Sum_and_Sub(const bigNumber& left, const bigNumber& right) const
+bigNumber& bigNumber::_Sum_and_Sub(const bigNumber& left, const bigNumber& right) const
 {
 	bigNumber A = left, B = right; // в А будет большее по модулю число, в B - меньшее.
 	A._sign = 0;
@@ -451,34 +456,34 @@ bigNumber bigNumber::_Sum_and_Sub(const bigNumber& left, const bigNumber& right)
 
 	if (A._sign == B._sign)
 	{// если числа одного знака, то просто складываем их и выставляем нужный знак
-	
-		bigNumber res;
-		res._SetSize(A._size + 1);
-		
+
+		bigNumber* res = new bigNumber;
+		res->_SetSize(A._size + 1);
+
 		unsigned int carry = 0;
 		// прибавляем число меньшей размерности к числу большей размерности
 		for (int i = 0; i < B._size; i++)
 		{
 			unsigned int tmp = A[i] + B[i] + carry;
-			res[i] = tmp % BASE;
+			res->_digits[i] = tmp % BASE;
 			carry = tmp / BASE;
 		}
 		// добавляем перенос к оставшейся части более длинного числа
 		for (int i = B._size; i < A._size; i++)
 		{
 			unsigned int tmp = A[i] + carry;
-			res[i] = tmp % BASE;
+			res->_digits[i] = tmp % BASE;
 			carry = tmp / BASE;
 		}
-		res[A._size] = carry;
-		res._sign = A._sign;
-		res._DelNeedlessZeros();
-		return res;
+		res->_digits[A._size] = carry;
+		res->_sign = A._sign;
+		res->_DelNeedlessZeros();
+		return *res;
 	}
 	else
 	{// отнимаем одно от другого и выставляем нужный знак
-		bigNumber res;
-		res._SetSize(A._size);
+		bigNumber* res = new bigNumber;
+		res->_SetSize(A._size);
 
 		unsigned int carry = 0;
 		for (int i = 0; i < B._size; i++)
@@ -490,7 +495,7 @@ bigNumber bigNumber::_Sum_and_Sub(const bigNumber& left, const bigNumber& right)
 				carry = 1;
 				tmp += BASE;
 			}
-			res[i] = tmp;
+			res->_digits[i] = tmp;
 		}
 
 		for (int i = B._size; i < A._size; i++)
@@ -502,37 +507,37 @@ bigNumber bigNumber::_Sum_and_Sub(const bigNumber& left, const bigNumber& right)
 				carry = 1;
 				tmp += BASE;
 			}
-			res[i] = tmp;
+			res->_digits[i] = tmp;
 		}
-		res._sign = A._sign;
-		res._DelNeedlessZeros();
-		return res;
+		res->_sign = A._sign;
+		res->_DelNeedlessZeros();
+		return *res;
 	}
 }
 
-bigNumber bigNumber::_Multiplication(const bigNumber A, const bigNumber B) const
+bigNumber& bigNumber::_Multiplication(const bigNumber A, const bigNumber B) const
 {// простое умножение "столбиком"
-	bigNumber res;
-	res._SetSize(A._size + B._size);
+	bigNumber* res = new bigNumber;
+	res->_SetSize(A._size + B._size);
 	unsigned int carry = 0;
 	for (int i = 0; i < B._size; i++)
 	{
 		carry = 0;
 		for (int j = 0; j < A._size; j++)
 		{
-			unsigned long long int tmp = ( unsigned long long int) B[i] * ( unsigned long long int) A[j] + carry + res[i + j];
+			unsigned long long int tmp = ( unsigned long long int) B[i] * ( unsigned long long int) A[j] + carry + res->_digits[i + j];
 			carry = tmp / BASE;
-			res[i + j] = tmp % BASE;
+			res->_digits[i + j] = tmp % BASE;
 		}
-		res[i + A._size] = carry;
+		res->_digits[i + A._size] = carry;
 	}
 
-	res._sign = (A._sign != B._sign);
-	res._DelNeedlessZeros();
-	return res;
+	res->_sign = (A._sign != B._sign);
+	res->_DelNeedlessZeros();
+	return *res;
 }
 
-bigNumber bigNumber::_Division(const bigNumber& A, const bigNumber& B, bigNumber &remainder) const
+bigNumber& bigNumber::_Division(const bigNumber& A, const bigNumber& B, bigNumber &remainder) const
 {// возвращает целую часть от деления, в remainder - остаток
 	remainder = A;
 	remainder._sign = 0;
@@ -550,11 +555,11 @@ bigNumber bigNumber::_Division(const bigNumber& A, const bigNumber& B, bigNumber
 	if (remainder < divider)
 	{
 		remainder = A;
-		return bigNumber((long long int) 0);
+		return *(new bigNumber((long long int) 0));
 	}
 
-	bigNumber res;
-	res._SetSize(A._size - B._size + 1);
+	bigNumber* res = new bigNumber;
+	res->_SetSize(A._size - B._size + 1);
 
 	for (int i = A._size - B._size + 1; i; i--)
 	{
@@ -579,15 +584,15 @@ bigNumber bigNumber::_Division(const bigNumber& A, const bigNumber& B, bigNumber
 		bigNumber tmp = divider * qGuessMin;
 		tmp._ShiftLeft(i - 1); // умножение на BASE ^ (i - 1)
 		remainder = remainder - tmp;
-		res[i - 1] = qGuessMin;
+		res->_digits[i - 1] = qGuessMin;
 	}
 
-	res._sign = (A._sign != B._sign);
+	res->_sign = (A._sign != B._sign);
 	remainder._sign = (A._sign != B._sign);
 	remainder._DelNeedlessZeros();
-	res._DelNeedlessZeros();
+	res->_DelNeedlessZeros();
 
-	return res;
+	return *res;
 }
 
 bigNumber Pow(const bigNumber& A, const bigNumber& B, bigNumber& modulus)
@@ -597,9 +602,9 @@ bigNumber Pow(const bigNumber& A, const bigNumber& B, bigNumber& modulus)
 
 	bigNumber base = A % modulus;
 	bigNumber res = 1;
-	
+
 	for (bigNumber i = B; i > (long long int) 0; i = i - 1)
 		res = (res * base) % modulus;
-	
+
 	return res;
 }
