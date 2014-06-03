@@ -15,6 +15,7 @@ public:
 
 	char* GetString();
 	char* __str__();
+	char* __repr__();
 	bool GetNumberFromFile(const char* FileName);
 	bool SaveNumberToFile(const char* FileName);
 	bool GetNumberFromBinFile(const char* FileName);

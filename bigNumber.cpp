@@ -155,6 +155,11 @@ char* bigNumber::__str__()
 	return GetString();
 }
 
+char* bigNumber::__repr__()
+{
+	return GetString();
+}
+
 bool bigNumber::GetNumberFromFile(const char* filename)
 {
 	//FILE* Text_file = fopen(filename, "r");//R:  для единого стиля библиотеки нужно использовать потоки (fstream) для работы с файлам
